@@ -1,0 +1,58 @@
+version: '3.9'
+
+services:
+  api-stock:
+    build: ./api-stock
+    container_name: api-stock
+    # ports:
+    #   - "3001:3001"
+    env_file:
+      - ./api-stock/.env
+    environment:
+      - MONGO_URI
+      - ALPHA_API_KEY
+    volumes:
+      - ./api-stock:/app
+      - /app/node_modules
+    # depends_on:
+    #   - mongodb
+    networks:
+      - finance-pro
+      
+
+
+  stock-chart:
+    build: ./stock-chart
+    container_name: stock-chart
+    # ports:
+    #   - "3000:3000"
+    depends_on:
+      - api-stock
+      # - proxy-nginx
+    env_file:
+      - ./stock-chart/.env.local
+    environment:
+      - NEXT_PUBLIC_CLIENT_KEY_BACKEND_URI
+      - NEXT_PUBLIC_CLIENT_KEY_POLYGON_API_KEY
+    networks:
+      - finance-pro
+  proxy-nginx:
+    build: ./nginx
+    restart: always
+    depends_on:
+      - api-stock
+      - stock-chart
+    container_name: proxy-nginx
+    ports:
+      - "80:80"
+    networks:
+      - finance-pro
+      
+
+networks:
+  finance-pro:
+    driver: bridge
+
+volumes:
+  mongodb-data:
+    driver: local
